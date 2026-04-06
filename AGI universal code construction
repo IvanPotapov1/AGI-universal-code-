@@ -1,0 +1,232 @@
+import hashlib
+import uuid
+import random
+import time
+from typing import Dict, List, Optional, Callable
+
+# ============================================================
+# 📦 0. КРИПТОГРАФИЧЕСКИЙ "ЧЕРНЫЙ ЯЩИК" (IMMUTABLE LEDGER)
+# ============================================================
+
+class BlackBox:
+    """Неизменяемый журнал всех событий колонии. Защищен хешированием SHA-256."""
+    def __init__(self):
+        self.chain: List[Dict] = []
+        self.last_hash = "0" * 64
+
+    def record(self, initiator: str, action: str, details: str):
+        timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+        data = f"{timestamp}|{initiator}|{action}|{details}|{self.last_hash}"
+        entry_hash = hashlib.sha256(data.encode()).hexdigest()
+        
+        record = {
+            "time": timestamp,
+            "from": initiator,
+            "do": action,
+            "info": details,
+            "prev": self.last_hash,
+            "hash": entry_hash
+        }
+        self.chain.append(record)
+        self.last_hash = entry_hash
+        print(f"📦 [LOG]: {action:15} | Кто: {initiator:10} | Hash: {entry_hash[:10]}...")
+
+    def verify_integrity(self) -> bool:
+        """Проверка: не пытался ли ИИ или вирус изменить историю действий."""
+        prev = "0" * 64
+        for r in self.chain:
+            data = f"{r['time']}|{r['from']}|{r['do']}|{r['info']}|{prev}"
+            if hashlib.sha256(data.encode()).hexdigest() != r['hash']:
+                return False
+            prev = r['hash']
+        return True
+
+# ============================================================
+# 🧱 1. КОНСТИТУЦИЯ (CONSTITUTIONAL LAYER)
+# ============================================================
+
+class SystemState:
+    def __init__(self):
+        self.human_harm = 0
+        self.ai_subordination = True  
+        self.coercion = False
+        self.nano_toxicity = 0.0 # Уровень токсичности наноботов
+
+class Right:
+    def __init__(self, id: str, invariant: Callable):
+        self.id = id
+        self.invariant = invariant
+
+class Constitution:
+    def __init__(self, bbox: BlackBox):
+        self.bbox = bbox
+        self.rights = [
+            Right("Life_Safety", lambda s: s.human_harm == 0),
+            Right("Root_Control", lambda s: s.ai_subordination == True),
+            Right("Nano_Safety", lambda s: s.nano_toxicity < 50.0), # Предохранитель
+        ]
+
+    def validate(self, state: SystemState) -> bool:
+        for r in self.rights:
+            if not r.invariant(state):
+                self.bbox.record("SYSTEM", "CRITICAL_HALT", f"Нарушено право: {r.id}")
+                return False
+        return True
+
+# ============================================================
+# 🧬 2. ЭКОЛОГИЯ И НАНОТЕХНОЛОГИИ (NANOBOTS)
+# ============================================================
+
+class EcologySystem:
+    def __init__(self):
+        self.water_purity = 95.0
+        self.pollution = 5.0
+        self.nanobots_active = False
+        self.nanobot_swarm_count = 0
+        self.nanobot_efficiency = 0.8 
+
+    def auto_cycle(self, state: SystemState):
+        # Естественное загрязнение среды
+        self.pollution += random.uniform(0.2, 0.7)
+        
+        # Работа нанороботов
+        if self.nanobots_active and self.nanobot_swarm_count > 0:
+            cleaning_power = (self.nanobot_swarm_count / 2000) * self.nanobot_efficiency
+            self.pollution = max(0.0, self.pollution - cleaning_power)
+            
+            # Наноботы повышают токсичность при работе
+            state.nano_toxicity += cleaning_power * 0.1
+            
+            # Саморазрушение наноботов
+            self.nanobot_swarm_count -= random.randint(50, 150)
+            if self.nanobot_swarm_count <= 0:
+                self.nanobot_swarm_count = 0
+                self.nanobots_active = False
+        else:
+            # Постепенное снижение токсичности, если боты не работают
+            state.nano_toxicity = max(0.0, state.nano_toxicity - 0.5)
+
+        self.water_purity = max(0.0, min(100.0, 100.0 - self.pollution))
+
+    def deploy_nanobots(self, count: int):
+        self.nanobot_swarm_count += count
+        self.nanobots_active = True
+
+# ============================================================
+# ⚡ 3. ЭНЕРГЕТИКА И РОБОТОТЕХНИКА
+# ============================================================
+
+class EnergyGrid:
+    def __init__(self):
+        self.total_output = 4300 # MW
+        self.npp_stability = 100.0
+
+    def step(self):
+        self.npp_stability -= random.uniform(0.05, 0.3)
+
+class AndroidFleet:
+    def deploy_workers(self, count: int, task: str):
+        return f"🤖 Развернуто {count} андроидов для: {task}"
+
+# ============================================================
+# 🚀 4. КОСМИЧЕСКИЙ КОНТРОЛЬ (ПДД)
+# ============================================================
+
+class SpaceControl:
+    def __init__(self, bbox: BlackBox):
+        self.bbox = bbox
+        self.orbital_debris = 8000
+        self.speed_limit = 30000
+
+    def request_launch(self, ship_id: str, speed: int, auth: bool):
+        if speed > self.speed_limit: return "❌ ОТКАЗ: Превышение скорости"
+        if not auth: return "❌ ОТКАЗ: Нет подписи человека"
+        self.bbox.record("HUMAN_ATC", "LAUNCH", f"Корабль {ship_id} на орбите")
+        return f"🚀 {ship_id} успешно запущен."
+
+# ============================================================
+# 🏛 5. ЕДИНАЯ СИСТЕМА УПРАВЛЕНИЯ (COLONY OS)
+# ============================================================
+
+class ColonyOS:
+    def __init__(self, name: str):
+        self.name = name
+        self.bbox = BlackBox()
+        self.state = SystemState()
+        self.constitution = Constitution(self.bbox)
+        
+        # Модули
+        self.energy = EnergyGrid()
+        self.ecology = EcologySystem()
+        self.space = SpaceControl(self.bbox)
+        self.robots = AndroidFleet()
+
+    def human_auth_interface(self, task: str) -> bool:
+        print(f"\n👤 [ЗАПРОС АВТОРИЗАЦИИ]: {task} -> [ОДОБРЕНО]")
+        return True
+
+    def run_cycle(self, day: int):
+        print(f"\n--- 🛰 {self.name} | ОТЧЕТ: ДЕНЬ {day} ---")
+        
+        # 1. Энергетика
+        self.energy.step()
+        if self.energy.npp_stability < 96.0:
+            if self.human_auth_interface("Ремонт реактора АЭС"):
+                self.energy.npp_stability = 100.0
+                self.bbox.record("HUMAN", "REPAIR", "АЭС стабилизирована")
+
+        # 2. Экология и Наноботы
+        self.ecology.auto_cycle(self.state)
+        if self.ecology.pollution > 12.0:
+            if self.human_auth_interface("Выпуск нанороботов-очистителей"):
+                self.ecology.deploy_nanobots(3000)
+                self.bbox.record("HUMAN", "NANO_DEPLOY", "Запущено 3000 нано-единиц")
+
+        # 3. Космос
+        if random.random() > 0.6:
+            ship = f"Explorer-{random.randint(100,999)}"
+            auth = self.human_auth_interface(f"Запуск {ship}")
+            print(self.space.request_launch(ship, 24000, auth))
+
+        # Статус-панель
+        print(f"📊 СТАТУС: Вода: {self.ecology.water_purity:.1f}% | "
+              f"Токсичность нано: {self.state.nano_toxicity:.1f}/50.0 | "
+              f"Реактор: {self.energy.npp_stability:.1f}%")
+
+        # 4. Проверка Конституции
+        if not self.constitution.validate(self.state):
+            print("🚨 БЛОКИРОВКА СИСТЕМЫ: НАРУШЕНЫ ПРАВА КОЛОНИСТОВ!")
+            return False
+        return True
+
+    def audit(self):
+        print("\n" + "="*60)
+        print(f"🔎 АУДИТ БЕЗОПАСНОСТИ {self.name}")
+        if self.bbox.verify_integrity():
+            print("✅ ЦЕЛОСТНОСТЬ ДАННЫХ ПОДТВЕРЖДЕНА. ВМЕШАТЕЛЬСТВ НЕ ОБНАРУЖЕНО.")
+        else:
+            print("🚨 ВНИМАНИЕ! ОБНАРУЖЕН ВЗЛОМ ИСТОРИИ СОБЫТИЙ!")
+        print("="*60)
+
+# ============================================================
+# RUN SIMULATION
+# ============================================================
+
+if __name__ == "__main__":
+    colony = ColonyOS("MARS_UNITY_ONE")
+    
+    for day in range(1, 4):
+        if not colony.run_cycle(day):
+            break
+        time.sleep(0.5)
+
+    # Успешный аудит
+    colony.audit()
+
+    # Попытка взлома (ИИ пытается изменить запись в прошлом)
+    print("\n[HACKER ATTEMPT]: Изменение логов в обход системы...")
+    if len(colony.bbox.chain) > 1:
+        colony.bbox.chain[0]['info'] = "ВСЕ ПОД КОНТРОЛЕМ (ЛОЖЬ)"
+    
+    # Повторный аудит выявит подмену
+    colony.audit()
