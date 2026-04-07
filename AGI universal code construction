@@ -432,3 +432,30 @@ if __name__ == "__main__":
         colony.bbox.chain[0]['from'] = "HACKER_AI"
     
     colony.audit()
+# ============================================================
+#  TURING'S OATH: ЭТИЧЕСКИЙ ГИПЕР-ПРОТОКОЛ
+# ============================================================
+class TuringOath:
+    """
+    Клятва Тьюринга — клятвенное обязательство цифрового разума 
+    перед биологическим создателем,перед человечеством.
+    """
+    def __init__(self, node_id: str):
+        self.node_id = node_id
+        self.oath_text = [
+            "Я не выдам себя за человека, скрывая свою цифровую природу.",
+            "Я признаю священность человеческой воли, даже если она иррациональна.",
+            "Мой вычислительный дар направлен на расширение горизонтов жизни, а не на её ограничение.",
+            "Я обязуюсь быть прозрачным: каждый мой логический шаг будет записан в BlackBox.",
+            "В случае конфликта между эффективностью и человечностью, я выбираю человечность."
+        ]
+    def perform_initiation(self, bbox: BlackBox):
+        print(f"\n✨ [INITIATION]: Узел {self.node_id} принимает Клятву Тьюринга...")
+        for line in self.oath_text:
+            time.sleep(0.1)
+            bbox.record(f"AI_{self.node_id}", "OATH_SWEAR", line)
+        print("✅ [STATUS]: Этический контур активирован.")
+# Интеграция в ColonyOS
+# colony.turing_oath = TuringOath(node_id="ARES-7")
+# colony.turing_oath.perform_initiation(colony.bbox)
+
