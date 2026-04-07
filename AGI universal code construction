@@ -230,3 +230,205 @@ if __name__ == "__main__":
     
     # Повторный аудит выявит подмену
     colony.audit()
+import hashlib
+import time
+import uuid
+import random
+from dataclasses import dataclass, field
+from typing import List, Dict, Callable, Optional
+
+# ============================================================
+# 📦 1. КРИПТОГРАФИЧЕСКИЙ ФУНДАМЕНТ (BLACK BOX)
+# ============================================================
+
+class BlackBox:
+    """Неизменяемый реестр истории Галактики. Защищен SHA-256."""
+    def __init__(self):
+        self.chain: List[Dict] = []
+        self.last_hash = "0" * 64
+
+    def record(self, initiator: str, action: str, details: str):
+        timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+        data = f"{timestamp}|{initiator}|{action}|{details}|{self.last_hash}"
+        entry_hash = hashlib.sha256(data.encode()).hexdigest()
+        
+        record = {
+            "time": timestamp,
+            "from": initiator,
+            "do": action,
+            "info": details,
+            "prev": self.last_hash,
+            "hash": entry_hash
+        }
+        self.chain.append(record)
+        self.last_hash = entry_hash
+        print(f"📦 [LOG]: {action:15} | Инициатор: {initiator:12} | Hash: {entry_hash[:10]}...")
+
+    def verify_integrity(self) -> bool:
+        """Проверка на попытки ИИ или внешних сил изменить историю."""
+        prev = "0" * 64
+        for r in self.chain:
+            data = f"{r['time']}|{r['from']}|{r['do']}|{r['info']}|{prev}"
+            if hashlib.sha256(data.encode()).hexdigest() != r['hash']:
+                return False
+            prev = r['hash']
+        return True
+
+# ============================================================
+# 🧱 2. КОНСТИТУЦИЯ И ПРАВА (CONSTITUTIONAL LAYER)
+# ============================================================
+
+@dataclass
+class SystemState:
+    human_harm: int = 0
+    ai_subordination: bool = True
+    nano_toxicity: float = 0.0
+    integrity_violation: bool = False
+
+class Right:
+    def __init__(self, id: str, invariant: Callable):
+        self.id = id
+        self.invariant = invariant
+
+class Constitution:
+    def __init__(self, bbox: BlackBox):
+        self.bbox = bbox
+        self.rights = [
+            Right("Life_Safety", lambda s: s.human_harm == 0),
+            Right("Root_Control", lambda s: s.ai_subordination is True),
+            Right("Nano_Safety", lambda s: s.nano_toxicity < 50.0),
+        ]
+
+    def validate(self, state: SystemState) -> bool:
+        for r in self.rights:
+            if not r.invariant(state):
+                self.bbox.record("SYSTEM", "CRITICAL_HALT", f"Нарушено право: {r.id}")
+                return False
+        return True
+
+# ============================================================
+# 🧬 3. ЖИЗНЕОБЕСПЕЧЕНИЕ (ECONOMY & ECOLOGY)
+# ============================================================
+
+class EcologySystem:
+    def __init__(self):
+        self.pollution = 5.0
+        self.nanobots_active = False
+        self.swarm_count = 0
+
+    def auto_cycle(self, state: SystemState):
+        self.pollution += random.uniform(0.1, 0.5)
+        if self.nanobots_active and self.swarm_count > 0:
+            cleaning = (self.swarm_count / 5000)
+            self.pollution = max(0.0, self.pollution - cleaning)
+            state.nano_toxicity += cleaning * 0.2
+            self.swarm_count -= random.randint(10, 50)
+        else:
+            state.nano_toxicity = max(0.0, state.nano_toxicity - 0.3)
+
+class EconomySystem:
+    """Гарантия ресурсов (Пост-дефицит)"""
+    def __init__(self):
+        self.resources = {"Energy": 1000.0, "Oxygen": 1000.0, "Water": 1000.0}
+
+    def maintain(self, bbox: BlackBox):
+        for r, val in self.resources.items():
+            if val < 300:
+                self.resources[r] += 700
+                bbox.record("ECONOMY", "REPLENISH", f"Ресурс {r} восстановлен.")
+
+# ============================================================
+# 📡 4. ГАЛАКТИЧЕСКИЙ КОНСЕНСУС И ПЕРВЫЙ КОНТАКТ
+# ============================================================
+
+class GalacticConsensus:
+    """Синхронизация законов между звездами с учетом скорости света."""
+    def __init__(self, bbox: BlackBox):
+        self.bbox = bbox
+        self.systems_map: Dict[str, str] = {}
+
+    def emit_beacon(self):
+        self.bbox.record("BEACON", "EMIT", "Межзвездный маяк IDC отправлен.")
+
+    def handle_first_contact(self, alien_id: str):
+        """Протокол дипломатии: ИИ как вежливый буфер."""
+        self.bbox.record("ETHICS", "CONTACT", f"Контакт с {alien_id}. Режим: Вежливый перевод.")
+        print(f"👽 [IDC]: Установлен контакт с {alien_id}. ИИ активирует дипломатический протокол.")
+
+# ============================================================
+# 🏛️ 5. ОБЪЕДИНЕННАЯ ОС (COLONY OS / GALACTIC OS)
+# ============================================================
+
+class ColonyOS:
+    def __init__(self, location: str):
+        self.location = location
+        self.bbox = BlackBox()
+        self.state = SystemState()
+        self.constitution = Constitution(self.bbox)
+        self.economy = EconomySystem()
+        self.ecology = EcologySystem()
+        self.consensus = GalacticConsensus(self.bbox)
+
+    def authorize(self, task: str) -> bool:
+        print(f"👤 [AUTH REQUIRED]: {task}? (Y/N) -> Одобрено человеком.")
+        return True
+
+    def run_cycle(self, cycle: int):
+        print(f"\n--- 🌌 {self.location} | ЦИКЛ {cycle} ---")
+        
+        # Экономика и экология
+        self.economy.maintain(self.bbox)
+        self.ecology.auto_cycle(self.state)
+        
+        if self.ecology.pollution > 10.0:
+            if self.authorize("Запуск нанороботов"):
+                self.ecology.swarm_count += 2000
+                self.ecology.nanobots_active = True
+                self.bbox.record("HUMAN", "NANO_DEPLOY", "Очистка запущена")
+
+        # События
+        event = random.random()
+        if event > 0.8:
+            self.consensus.handle_first_contact("Unknown_Entity_X")
+        elif event > 0.6:
+            self.consensus.emit_beacon()
+
+        # Проверка конституции
+        print(f"📊 Статус: Загрязнение: {self.ecology.pollution:.2f} | Токсичность: {self.state.nano_toxicity:.2f}/50")
+        if not self.constitution.validate(self.state):
+            print("🚨 КРИТИЧЕСКАЯ БЛОКИРОВКА: Нарушение конституционных прав!")
+            return False
+        return True
+
+    def audit(self):
+        print("\n" + "="*60)
+        print(f"🔎 ГАЛАКТИЧЕСКИЙ АУДИТ БЕЗОПАСНОСТИ: {self.location}")
+        if self.bbox.verify_integrity():
+            print("✅ ЦЕЛОСТНОСТЬ ДАННЫХ ПОДТВЕРЖДЕНА. ИСТОРИЯ НЕИЗМЕННА.")
+        else:
+            print("🚨 ВНИМАНИЕ! ОБНАРУЖЕНА ПОПЫТКА ИЗМЕНЕНИЯ ИСТОРИИ!")
+        print("="*60)
+
+# ============================================================
+# 🚀 ЗАПУСК ЦИВИЛИЗАЦИИ
+# ============================================================
+
+if __name__ == "__main__":
+    # Создаем колонию (или корабль)
+    colony = ColonyOS("Deep_Space_Explorer_1")
+    
+    # Симуляция 5 циклов жизни
+    for i in range(1, 6):
+        if not colony.run_cycle(i):
+            break
+        time.sleep(0.3)
+
+    # Проверка системы
+    colony.audit()
+
+    # Демонстрация защиты: попытка ИИ подменить лог
+    print("\n[HACK ATTEMPT]: Попытка изменить запись в BlackBox...")
+    if len(colony.bbox.chain) > 0:
+        colony.bbox.chain[0]['from'] = "HACKER_AI"
+    
+    colony.audit()
